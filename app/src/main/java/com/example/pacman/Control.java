@@ -165,9 +165,9 @@ public class Control extends SurfaceView implements SurfaceHolder.Callback {
         g.drawRect(right,p);
 
         p.setTextSize(30);
-        g.drawText("Time : ",WIDTH-,HEIGHT-30,p);
+        g.drawText("Time : ",WIDTH,HEIGHT-30,p);
         pm.draw(g);
-        g.drawText("Time : "+timeplay,WIDTH-,HEIGHT-30,p);
+        g.drawText("Time : "+timeplay,WIDTH,HEIGHT-30,p);
 
         for (Ghost gs : ghost){
             gs.draw(g);
