@@ -1,7 +1,7 @@
 package com.example.pacman;
 
 public class Level {
-	public int mapgame[][]={//  y = 28  x =31
+	public int mapGame[][]={//  x = 28  y =31
 		{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
         {1,0,0,0,0,0,3,0,0,0,0,0,0,1,1,0,0,0,0,0,0,3,0,0,0,0,0,1},//1 2
         {1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1},
@@ -34,28 +34,26 @@ public class Level {
         {1,0,0,0,0,0,0,0,0,0,0,0,3,0,0,3,0,0,0,0,0,0,0,0,0,0,0,1},// 33 34
         {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
         };
-	public boolean checkborder(int x,int y){
-		if (y == 14 &&( x <= 0|| x >= 27 )) return true;
-		return false;
+	public boolean checkBorder(int x, int y){
+		return y == 14 && (x <= 0 || x >= 27);
 	}
-	
+
 	public boolean checkmap(int x,int y) {
-		if(mapgame[y][x]==1) return true;
+		if(mapGame[y][x]==1) return true;
 		return false;
 	}
 	public void setMap(int a,int b,int c) {
-		mapgame[a][b]=c;
+		mapGame[a][b]=c;
 	}
-	public boolean checkMap(int a,int b,int c) {
-		if(mapgame[a][b]==c) return true;
-		return false;
+	public boolean checkMap(int row,int column,int c) {
+		if(-1 < row && row < 31 && -1 < column && column < 29) return mapGame[row][column] == c;
+		return c == -1;
 	}
 	public boolean canRun(int a,int b,int c) {
-
-		if(mapgame[a][b]!=c ) return true;
-		return false;
+//		if(-1 < a && a < 31 && -1 < b && b < 28) return true;
+		return mapGame[b][a] != c;
 	}
 	public int getMap(int a,int b) {
-		return mapgame[b][a];
+		return mapGame[b][a];
 	}
 }

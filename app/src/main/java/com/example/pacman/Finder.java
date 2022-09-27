@@ -12,7 +12,7 @@ public class Finder {
 		for(int x=0;x<30;x++)
 			for(int y=0;y<28;y++)
 			{
-				if(pb.mapgame[x][y] !=1){
+				if(pb.mapGame[x][y] !=1){
 					map[x][y] = false;
 				}else{
 					map[x][y] = true;
@@ -24,7 +24,7 @@ public class Finder {
 		if(x==a && y==b){
 			return 4;
 		}
-		if (level.checkborder(a,b)){
+		if (level.checkBorder(a,b)){
 			return 0;
 		}
 
@@ -92,10 +92,10 @@ public class Finder {
 		if(xp == a + 1 && yp == b)
 			return 1;
 		if(xp == a && yp == b - 1)
-			return 4;
+			return 0;
 		if(xp == a && yp == b + 1)
 			return 2;
-		return 0;
+		return 4;
 
 	}
 

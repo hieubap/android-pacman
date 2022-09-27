@@ -4,37 +4,59 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 
-public class Food {
+public class Food extends GameObject {
+    protected final Paint paint;
     public Bitmap[] bitmaps;
-    public int x,y,setbitmap = 0;
-    public boolean appear,eat = false;
+    public int setBitMap = 0;
+    public boolean appear, eat = false;
+    protected Pacman pacman;
+    protected Control control;
 
-    public Food(Bitmap[] bitmaps,int x,int y){
+    public Food(Control control, int x, int y) {
+        paint = new Paint();
+        paint.setColor(Color.WHITE);
+        this.control = control;
+        this.bitmaps = control.picture.food;
+        this.pacman = control.getPacman();
+        this.x = x + Control.MAP_X;
+        this.y = y + Control.MAP_Y;
         appear = true;
-        this.bitmaps = bitmaps;
-        this.x = x;
-        this.y = y;
     }
 
-    public void draw(Canvas canvas){
+    public void draw(Canvas canvas) {
         if (appear)
-        canvas.drawBitmap(bitmaps[setbitmap],x,y,null);
-        if (eat){
+            canvas.drawBitmap(bitmaps[setBitMap], x, y, null);
+        if (eat) {
             Paint p = new Paint();
             p.setColor(Color.WHITE);
-            p.setTextSize(30);
-            canvas.drawText("1000",x-10,y+30,p);
+            p.setTextSize(60);
+            canvas.drawText("1000", x - 40, y + 20, p);
         }
     }
 
-    public void update(){
-        appear = false;
-        eat = true;
-        setbitmap++;
-        if (setbitmap == 4)
-            setbitmap = 0;
+    public void update() {
+        // sau 1p thì xuất hiện trở lại
+        eat = false;
+        if (control.timePlay % 60 == 0) {
+            appear = true;
+        }
 
+        if (appear) {
+            Rect rect = new Rect(x, y, x + Control.PIXEL, y + Control.PIXEL);
+            if (rect.contains(pacman.x + Control.PIXEL / 2, pacman.y + Control.PIXEL / 2)) {
+                control.getThread().delay();
+                control.getSound().play(control.getSound().eatFruit);
+                pacman.score += Control.SCORE_FOOD;
+
+                appear = false;
+                eat = true;
+                setBitMap++;
+                if (setBitMap == 4)
+                    setBitMap = 0;
+            }
+        }
     }
 
 }

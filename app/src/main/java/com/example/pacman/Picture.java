@@ -3,74 +3,77 @@ package com.example.pacman;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Matrix;
 
 
 public class Picture
 {
-    public final int SIZEPACMAN = 40;
-    public final int SIZEGHOST = 50;
+    public int SIZE_PACMAN = Control.SIZE_PACMAN;
+    public int SIZE_GHOST = Control.SIZE_GHOST;
 
     public Bitmap[] ghost,pacman;
     public Bitmap[] scare,food,endscare;
-    public Bitmap background,eye,win,gameover;
+    public Bitmap background,title,eye,win,gameover;
 
     public Picture(Resources resources) {
         ghost = new Bitmap[3*4];
 
-        ghost[0] = BitmapFactory.decodeResource(resources,R.drawable.ghost1);
-        ghost[0] = Bitmap.createScaledBitmap(ghost[0],SIZEGHOST,SIZEGHOST,true);
-        ghost[1] = BitmapFactory.decodeResource(resources,R.drawable.ghost2);
-        ghost[1] = Bitmap.createScaledBitmap(ghost[1],SIZEGHOST,SIZEGHOST,true);
-        ghost[2] = BitmapFactory.decodeResource(resources,R.drawable.ghost3);
-        ghost[2] = Bitmap.createScaledBitmap(ghost[2],SIZEGHOST,SIZEGHOST,true);
-        ghost[3] = BitmapFactory.decodeResource(resources,R.drawable.ghost6);
-        ghost[3] = Bitmap.createScaledBitmap(ghost[3],SIZEGHOST,SIZEGHOST,true);
-        ghost[4] = BitmapFactory.decodeResource(resources,R.drawable.ghost7);
-        ghost[4] = Bitmap.createScaledBitmap(ghost[4],SIZEGHOST,SIZEGHOST,true);
-        ghost[5] = BitmapFactory.decodeResource(resources,R.drawable.ghost7);
-        ghost[5] = Bitmap.createScaledBitmap(ghost[5],SIZEGHOST,SIZEGHOST,true);
+        ghost[0] = BitmapFactory.decodeResource(resources,R.drawable.ghost4);
+        ghost[0] = Bitmap.createScaledBitmap(ghost[0], SIZE_GHOST, SIZE_GHOST,true);
+        ghost[1] = BitmapFactory.decodeResource(resources,R.drawable.ghost5);
+        ghost[1] = Bitmap.createScaledBitmap(ghost[1], SIZE_GHOST, SIZE_GHOST,true);
+        ghost[2] = BitmapFactory.decodeResource(resources,R.drawable.ghost5);
+        ghost[2] = Bitmap.createScaledBitmap(ghost[2], SIZE_GHOST, SIZE_GHOST,true);
 
-        ghost[6] = flipHor(ghost[0]);
-        ghost[7] = flipHor(ghost[1]);
-        ghost[8] = flipHor(ghost[2]);
+        ghost[3] = BitmapFactory.decodeResource(resources,R.drawable.ghost1);
+        ghost[3] = Bitmap.createScaledBitmap(ghost[3], SIZE_GHOST, SIZE_GHOST,true);
+        ghost[4] = BitmapFactory.decodeResource(resources,R.drawable.ghost2);
+        ghost[4] = Bitmap.createScaledBitmap(ghost[4], SIZE_GHOST, SIZE_GHOST,true);
+        ghost[5] = BitmapFactory.decodeResource(resources,R.drawable.ghost3);
+        ghost[5] = Bitmap.createScaledBitmap(ghost[5], SIZE_GHOST, SIZE_GHOST,true);
 
-        ghost[9] = BitmapFactory.decodeResource(resources,R.drawable.ghost4);
-        ghost[9] = Bitmap.createScaledBitmap(ghost[9],SIZEGHOST,SIZEGHOST,true);
-        ghost[10] = BitmapFactory.decodeResource(resources,R.drawable.ghost5);
-        ghost[10] = Bitmap.createScaledBitmap(ghost[10],SIZEGHOST,SIZEGHOST,true);
-        ghost[11] = BitmapFactory.decodeResource(resources,R.drawable.ghost5);
-        ghost[11] = Bitmap.createScaledBitmap(ghost[11],SIZEGHOST,SIZEGHOST,true);
+        ghost[6] = BitmapFactory.decodeResource(resources,R.drawable.ghost6);
+        ghost[6] = Bitmap.createScaledBitmap(ghost[6], SIZE_GHOST, SIZE_GHOST,true);
+        ghost[7] = BitmapFactory.decodeResource(resources,R.drawable.ghost7);
+        ghost[7] = Bitmap.createScaledBitmap(ghost[7], SIZE_GHOST, SIZE_GHOST,true);
+        ghost[8] = BitmapFactory.decodeResource(resources,R.drawable.ghost7);
+        ghost[8] = Bitmap.createScaledBitmap(ghost[8], SIZE_GHOST, SIZE_GHOST,true);
+
+        ghost[9] = flipHor(ghost[3]);
+        ghost[10] = flipHor(ghost[4]);
+        ghost[11] = flipHor(ghost[5]);
+
 
         scare = new Bitmap[3];
         scare[0] = BitmapFactory.decodeResource(resources,R.drawable.scare1);
-        scare[0] = Bitmap.createScaledBitmap(scare[0],SIZEGHOST,SIZEGHOST,true);
+        scare[0] = Bitmap.createScaledBitmap(scare[0], SIZE_GHOST, SIZE_GHOST,true);
         scare[1] = BitmapFactory.decodeResource(resources,R.drawable.scare2);
-        scare[1] = Bitmap.createScaledBitmap(scare[1],SIZEGHOST,SIZEGHOST,true);
+        scare[1] = Bitmap.createScaledBitmap(scare[1], SIZE_GHOST, SIZE_GHOST,true);
         scare[2] = BitmapFactory.decodeResource(resources,R.drawable.scare1);
-        scare[2] = Bitmap.createScaledBitmap(scare[2],SIZEGHOST,SIZEGHOST,true);
+        scare[2] = Bitmap.createScaledBitmap(scare[2], SIZE_GHOST, SIZE_GHOST,true);
 
         endscare = new Bitmap[3];
         endscare[0] = BitmapFactory.decodeResource(resources,R.drawable.white1);
-        endscare[0] = Bitmap.createScaledBitmap(endscare[0],SIZEGHOST,SIZEGHOST,true);
+        endscare[0] = Bitmap.createScaledBitmap(endscare[0], SIZE_GHOST, SIZE_GHOST,true);
         endscare[1] = BitmapFactory.decodeResource(resources,R.drawable.white2);
-        endscare[1] = Bitmap.createScaledBitmap(endscare[1],SIZEGHOST,SIZEGHOST,true);
+        endscare[1] = Bitmap.createScaledBitmap(endscare[1], SIZE_GHOST, SIZE_GHOST,true);
         endscare[2] = BitmapFactory.decodeResource(resources,R.drawable.white1);
-        endscare[2] = Bitmap.createScaledBitmap(endscare[2],SIZEGHOST,SIZEGHOST,true);
+        endscare[2] = Bitmap.createScaledBitmap(endscare[2], SIZE_GHOST, SIZE_GHOST,true);
 
 
 
         pacman = new Bitmap[5*4];
         pacman[0] = BitmapFactory.decodeResource(resources,R.drawable.pac0);
-        pacman[0] = Bitmap.createScaledBitmap(pacman[0],SIZEPACMAN,SIZEPACMAN,true);
+        pacman[0] = Bitmap.createScaledBitmap(pacman[0], SIZE_PACMAN, SIZE_PACMAN,true);
         pacman[1] = BitmapFactory.decodeResource(resources,R.drawable.pac1);
-        pacman[1] = Bitmap.createScaledBitmap(pacman[1],SIZEPACMAN,SIZEPACMAN,true);
+        pacman[1] = Bitmap.createScaledBitmap(pacman[1], SIZE_PACMAN, SIZE_PACMAN,true);
         pacman[2] = BitmapFactory.decodeResource(resources,R.drawable.pac2);
-        pacman[2] = Bitmap.createScaledBitmap(pacman[2],SIZEPACMAN,SIZEPACMAN,true);
+        pacman[2] = Bitmap.createScaledBitmap(pacman[2], SIZE_PACMAN, SIZE_PACMAN,true);
         pacman[3] = BitmapFactory.decodeResource(resources,R.drawable.pac3);
-        pacman[3] = Bitmap.createScaledBitmap(pacman[3],SIZEPACMAN,SIZEPACMAN,true);
+        pacman[3] = Bitmap.createScaledBitmap(pacman[3], SIZE_PACMAN, SIZE_PACMAN,true);
         pacman[4] = BitmapFactory.decodeResource(resources,R.drawable.pac4);
-        pacman[4] = Bitmap.createScaledBitmap(pacman[4],SIZEPACMAN,SIZEPACMAN,true);
+        pacman[4] = Bitmap.createScaledBitmap(pacman[4], SIZE_PACMAN, SIZE_PACMAN,true);
 
         pacman[5] = rotation(pacman[0],90);
         pacman[6] = rotation(pacman[1],90);
@@ -93,6 +96,9 @@ public class Picture
         background = BitmapFactory.decodeResource(resources,R.drawable.map);
         background = Bitmap.createScaledBitmap(background,Control.PIXEL*28,Control.PIXEL*31,true);
 
+        title = BitmapFactory.decodeResource(resources,R.drawable.title);
+        title = Bitmap.createScaledBitmap(title,Control.WIDTH,(int)(Control.WIDTH*0.2),true);
+
         food = new Bitmap[4];
         food[0] = BitmapFactory.decodeResource(resources,R.drawable.food1);
         food[0] = Bitmap.createScaledBitmap(food[0],Control.PIXEL,Control.PIXEL,true);
@@ -107,11 +113,9 @@ public class Picture
         eye = Bitmap.createScaledBitmap(eye,Control.PIXEL*3/2,Control.PIXEL*3/2,true);
 
         win = BitmapFactory.decodeResource(resources,R.drawable.victory);
-        win = Bitmap.createScaledBitmap(win,MainActivity.WIDTH,400,true);
+        win = Bitmap.createScaledBitmap(win,Control.MAP_W,400,true);
         gameover = BitmapFactory.decodeResource(resources,R.drawable.gameover);
-        gameover = Bitmap.createScaledBitmap(gameover,MainActivity.WIDTH,400,true);
-
-
+        gameover = Bitmap.createScaledBitmap(gameover,Control.MAP_W,400,true);
 
     }
 
@@ -131,6 +135,10 @@ public class Picture
         return Bitmap.createBitmap(bitmap,0,0,bitmap.getWidth(),bitmap.getHeight(),matrix,true);
     }
 
+    public void drawBackground(Canvas canvas){
+        canvas.drawBitmap(background, Control.MAP_X, Control.MAP_Y, null);
+        canvas.drawBitmap(title, 0, 0, null);
 
+    }
 
 }

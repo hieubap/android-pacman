@@ -1,260 +1,320 @@
 package com.example.pacman;
 
-import android.content.Context;
-import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Point;
 import android.graphics.Rect;
-import android.view.ContextMenu;
-import android.view.Menu;
+import android.util.DisplayMetrics;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.view.View;
-import android.widget.Button;
 
 import java.util.ArrayList;
 
 @SuppressWarnings("serial")
 public class Control extends SurfaceView implements SurfaceHolder.Callback {
-    public int WIDTH = MainActivity.WIDTH;
-    public int HEIGHT = MainActivity.HEIGHT;
-    public static final int PIXEL = 24;
-    public static final int SPEED = 4;
+    // constant game
+    public static final int SCORE_FOOD = 1000;
+    public static final int SPEED_PER_PIXEL_SCARE = 16;
 
-    long timeplay = 0;
-    private Rect up,down,left,right;
-    private Pacman pm;
-	private ArrayList<Ghost> ghost;
-	private ArrayList<Point> powerfood;
-	private Food food;
-	public Picture picture;
-	private Sound sound;
-	private int streamid = 0;
+    // thời gian để thay đổi các trạng thái: (NORMAL, SCATTER, CHASE)
+    public static final int TIME_CHANGE_MODE_MOVE = 50;
+    // sợ hãi trong bao lâu (giây)
+    public static final int TIME_SCARE = 20;
+    // thời điểm chuyển sang sắp hết sợ hãi(giây)
+    public static final int TIME_END_SCARE = 5;
+    // đuổi trong thời gian bao lâu(giây)
+    public static final int TIME_CHASE = 25;
 
-	private Level lv;
-	private GameThread main;
-    private boolean endgame = false,danger = false,playsoundend = true;
+    public static final int DEFAULT_ROW = 23;
+    public static final int DEFAULT_COLUMN = 13;
+    //-------------------------------------------------------
+
+
+    // environment variable
+    // setup with screen device in constructor
+    public static int WIDTH;
+    public static int HEIGHT;
+    public static int PIXEL = 28;
+    public static int SPEED = 4;
+    public static int SPEED_SCARE = 1;
+    public static int SPEED_BACK = 4;
+    public static int MAP_X = 0;
+    public static int MAP_Y = 0;
+    public static int MAP_W = 0;
+    public static int MAP_H = 0;
+    public static int DOT_SIZE = 0;
+    public static int POWER_SIZE = 0;
+    public static int SIZE_GHOST = 0;
+    public static int SIZE_PACMAN = 0;
+
+    public static int BTN_X;
+    public static int BTN_Y;
+    public static int BTN_SIZE;
+
+    //---------------------------------------
+    private Paint paint;
+
+    long timePlay = 0, countDownModeMove = 0; // giây
+    private Rect up, down, left, right;
+    private Pacman pacman;
+    private ArrayList<Ghost> ghosts;
+    private ArrayList<PowerFood> powerFoods;
+    private Food food;
+    public Picture picture;
+    private Sound sound;
+    public int soundId = 0;
+
+    private Level level;
+    private GameThread thread;
+    private boolean endgame = false, danger = false, playsoundend = true;
     private MainActivity mainActivity;
 
     public Control(MainActivity context) {
         super(context);
+
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        context.getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        WIDTH = (displayMetrics.widthPixels / 28) * 28;
+        HEIGHT = (displayMetrics.heightPixels / 28) * 31;
+        SPEED_SCARE = (WIDTH / 28) / SPEED_PER_PIXEL_SCARE;
+        SPEED_BACK = 4 * SPEED_SCARE;
+        SPEED = 2 * SPEED_SCARE;
+        PIXEL = SPEED_PER_PIXEL_SCARE * SPEED_SCARE;
+        MAP_W = PIXEL * 28;
+        MAP_H = PIXEL * 31;
+        MAP_X = (WIDTH - MAP_W) / 2;
+        MAP_Y = (HEIGHT - MAP_H) / 3;
+        DOT_SIZE = PIXEL / 10 * 3;
+        POWER_SIZE = PIXEL / 10 * 8;
+        SIZE_GHOST = PIXEL / 10 * 15;
+        SIZE_PACMAN = PIXEL / 10 * 15;
+        BTN_SIZE = (HEIGHT - MAP_H - 40) / 6;
+        BTN_X = (WIDTH / 2 - BTN_SIZE * 3 / 2);
+        BTN_Y = (MAP_Y + PIXEL * 31 + 10);
+
+        System.out.println("SCREEN WIDTH = " + WIDTH + " PIXEL=" + PIXEL + " SPEED=" + SPEED + " SCARE=" + SPEED_SCARE + " BACK=" + SPEED_BACK);
+
         mainActivity = context;
         this.setFocusable(true);
         this.getHolder().addCallback(this);
         picture = new Picture(this.getResources());
         sound = new Sound(context);
+        paint = new Paint();
+
+        up = new Rect(BTN_X + BTN_SIZE, BTN_Y, BTN_X + 2 * BTN_SIZE, BTN_Y + BTN_SIZE);
+        down = new Rect(BTN_X + BTN_SIZE, BTN_Y + 2 * BTN_SIZE, BTN_X + 2 * BTN_SIZE, BTN_Y + 3 * BTN_SIZE);
+        left = new Rect(BTN_X, BTN_Y + BTN_SIZE, BTN_X + BTN_SIZE, BTN_Y + 2 * BTN_SIZE);
+        right = new Rect(BTN_X + 2 * BTN_SIZE, BTN_Y + BTN_SIZE, BTN_X + 3 * BTN_SIZE, BTN_Y + 2 * BTN_SIZE);
     }
 
-    public void resetPosition(){
-        int i=0;
-        for (Ghost gh : ghost) {
-            gh.setghost((12 + i) * PIXEL, 13 * PIXEL);
+    public void resetPosition() {
+        int i = 0;
+        for (Ghost gh : ghosts) {
+            gh.setPosition(Control.MAP_X + (12 + i) * PIXEL, Control.MAP_Y + 13 * PIXEL);
             i++;
         }
-            pm.setposition(13*PIXEL,23*PIXEL);
+        pacman.setposition(Control.MAP_X + 13 * PIXEL, Control.MAP_Y + 23 * PIXEL);
     }
-    public void setmodemove(Ghost.Modemove modemove){
-        for (Ghost gh : ghost) {
-            gh.setModemove(modemove);
+
+    public void setModeMove(Ghost.ModeMove modeMove) {
+        System.out.println("Control.setModeMove ..." + modeMove);
+        for (Ghost gh : ghosts) {
+            gh.setModeMove(modeMove);
+        }
+    }
+
+    public void updateModeMove() {
+    }
+
+    public void updatePerSecond() {
+        timePlay++;
+        Ghost.ModeMove mode = getGhostModeMove();
+        if (mode == Ghost.ModeMove.CHASE) {
+            countDownModeMove--;
+            if (countDownModeMove == 0) {
+                setModeMove(Ghost.ModeMove.SCATTER);
+            }
+        } else if (mode != Ghost.ModeMove.BACK &&
+                mode != Ghost.ModeMove.SCARE &&
+                timePlay % TIME_CHANGE_MODE_MOVE == 0) {
+            // không phải rượt đuổi
+            setModeMove(Ghost.ModeMove.CHASE);
+            countDownModeMove = TIME_CHASE;
         }
     }
 
     public void update() {
-        if (!checkPower()) {
-
-            if (timeplay % 100 == 20) {
-                setmodemove(Ghost.Modemove.chase);
-            } else if (timeplay % 100 == 40) {
-                setmodemove(Ghost.Modemove.scatter);
-            }
-        }
-        if (timeplay % 60 == 0){
-            food.appear = true;
-        }
-
-        if(!endgame)
-		{
-		pm.move();
-		pm.setscore(lv,sound);
-//		sound.play(sound.eat);
-            if (checkChase()){
+        if (!endgame) {
+            updateModeMove();
+            pacman.move();
+            pacman.setScore(level, sound);
+            if (checkChase()) {
                 danger = true;
-            }
-            else{
+            } else {
                 danger = false;
             }
-            if (!checkPower()){
-
-                pm.count = 0;
-                if (sound.soundbg == sound.pac6){
-                    sound.stop(streamid);
-                    streamid = sound.playSoundBackground(sound.siren);
+            if (!checkPower()) {
+                pacman.count = 0;
+                if (sound.soundBg == sound.pac6) {
+                    sound.stopId(soundId);
+                    soundId = sound.playSoundBackground(sound.siren);
                 }
             }
 
-		for (Ghost gh : ghost){
-		    gh.move();
-		    if (gh.checkdead(pm.Pacmanx,pm.Pacmany)){
-		        if (gh.modemove == Ghost.Modemove.scare){
+            for (Ghost gh : ghosts) {
+                gh.update();
+            }
 
-		            pm.count++;
-		            pm.score += pm.count*200;
-		            gh.modemove = Ghost.Modemove.back;
-		            gh.setPosition(PIXEL);
-                    gh.eat = true;
-                    sound.play(sound.eatghost);
-                }
-		        else if (gh.modemove != Ghost.Modemove.back && gh.modemove != Ghost.Modemove.scare){
-		            main.eat = true;
-		            pm.live --;
-		            resetPosition();
+            for (PowerFood powerFood : powerFoods) {
+                powerFood.update();
+            }
+            food.update();
+
+            if (pacman.live == 0 || pacman.countDot == 0) endgame = true;
+        }
+    }
+
+    @Override
+    public void draw(Canvas canvas) {
+        super.draw(canvas);
+        paint.setColor(Color.WHITE);
+        picture.drawBackground(canvas);
+
+        for (int y = 0; y < 30; y++)
+            for (int x = 0; x < 28; x++) {
+                if (level.checkMap(y, x, 0) || level.checkMap(y, x, 3)) {
+                    canvas.drawRect(MAP_X + x * PIXEL + PIXEL / 2 - DOT_SIZE / 2,
+                            MAP_Y + y * PIXEL + PIXEL / 2 - DOT_SIZE / 2,
+                            MAP_X + x * PIXEL + PIXEL / 2 + DOT_SIZE / 2,
+                            MAP_Y + y * PIXEL + PIXEL / 2 + DOT_SIZE / 2, paint);
                 }
             }
-		}
 
-		for(Point point : powerfood){
-		    Rect rect = new Rect(point.x,point.y,point.x+PIXEL,point.y + PIXEL );
-		    if (rect.contains(pm.Pacmanx+PIXEL/2,pm.Pacmany+PIXEL/2)){
+        // nút điều khiển
+        paint.setColor(Color.rgb(100, 100, 100));
+        canvas.drawRect(up, paint);
+        canvas.drawRect(down, paint);
+        canvas.drawRect(left, paint);
+        canvas.drawRect(right, paint);
 
-                for (Ghost gh : ghost){
-                    gh.setModemove(Ghost.Modemove.scare);
-                }
-
-                sound.stop(streamid);
-                streamid = sound.playSoundBackground(sound.pac6);
-                powerfood.remove(point);
-            };
+        // số mạng còn lại
+        for (int i = 0; i < pacman.live; i++) {
+            canvas.drawBitmap(pacman.image[2],
+                    WIDTH - MAP_X - (i + 1) * (SIZE_PACMAN + 10),
+                    (int) (WIDTH * 0.3) + SIZE_PACMAN, null);
         }
 
-		if (food.appear){
-		    Rect rect = new Rect(food.x,food.y,food.x+PIXEL,food.y+PIXEL);
-		    if (rect.contains(pm.Pacmanx+PIXEL/2,pm.Pacmany+PIXEL/2)){
-		        sound.play(sound.eatfruit);
-                pm.score += 1000;
-		        food.update();
-            }
+        paint.setTextSize(40);
+        canvas.drawText("Time : " + timePlay, MAP_X, (int) (WIDTH * 0.3), paint);
+        Ghost.ModeMove mode = getGhostModeMove();
+        /**
+         * scatter: gray
+         * normal: green
+         * chase: red
+         * scare: blue
+         */
+        if (mode != Ghost.ModeMove.SCATTER)
+            paint.setColor(mode == Ghost.ModeMove.CHASE
+                    ? Color.RED : mode == Ghost.ModeMove.SCARE
+                    ? Color.BLUE : Color.GREEN);
+        canvas.drawText(getGhostModeMove().toString(), WIDTH - MAP_X - 160, (int) (WIDTH * 0.3), paint);
+        paint.setColor(Color.WHITE);
+        canvas.drawText("Score : " + pacman.score, MAP_X, (int) (WIDTH * 0.3) + 60, paint);
+
+        for (PowerFood powerFood : powerFoods) {
+            powerFood.draw(canvas);
         }
 
-		if(pm.live==0||pm.countdot == 0) endgame=true;
-
-		}
-	}
-	@Override
-	public void draw(Canvas g) {
-	    super.draw(g);
-
-        Paint p = new Paint();
-
-        p.setColor(Color.WHITE);
-
-        g.drawBitmap(picture.background,-5,-2,null);
-		for(int y=0;y<30;y++)
-			for(int x=0;x<28;x++) {
-				if(lv.checkMap(y, x, 0)||lv.checkMap(y, x, 3)) {
-					g.drawRect(x*PIXEL+15, y*PIXEL+15, x*PIXEL+25, y*PIXEL+25,p);
-					}
-			}
-
-		p.setColor(Color.rgb(100,100,100));
-		g.drawRect(up,p);
-        g.drawRect(down,p);
-        g.drawRect(left,p);
-        g.drawRect(right,p);
-
-        p.setTextSize(30);
-        g.drawText("Time : ",WIDTH,HEIGHT-30,p);
-        pm.draw(g);
-        g.drawText("Time : "+timeplay,WIDTH,HEIGHT-30,p);
-
-        for (Ghost gs : ghost){
-            gs.draw(g);
-            if (gs.eat){
-                gs.drawscore(g,pm.count*200);
-                gs.eat = false;
-                main.eat = true;
-            }
+        for (int i = 0; i < pacman.live; i++) {
+            canvas.drawBitmap(pacman.image[2], i * (PIXEL + 2), HEIGHT - PIXEL, null);
         }
 
-        p.setColor(Color.WHITE);
-        for(Point point: powerfood){
-            g.drawRect(point.x+10,point.y+10,point.x+30,point.y + 30 , p);
+        pacman.draw(canvas);
+        food.draw(canvas);
+        for (Ghost gs : ghosts) {
+            gs.draw(canvas);
         }
-        food.draw(g);
-        if (food.eat){
-            food.eat = false;
-            main.eat = true;
-        }
-        for(int i=0;i<pm.live;i++){
-            g.drawBitmap(pm.image[2],i*(PIXEL+2),HEIGHT-PIXEL,null);
-        }
-        if (danger) {
-            p.setColor(Color.RED);
-            p.setTextSize(35);
-            g.drawText("!!! DANGER !!!", 0, HEIGHT-PIXEL, p);
-        }
-        if (endgame){
-            sound.stop(streamid);
-            if (pm.live == 0) {
-                g.drawBitmap(picture.gameover, 0, 200, null);
-                if (playsoundend)
-                {
+
+        paint.setColor(Color.WHITE);
+        if (endgame) {
+            sound.stopId(soundId);
+            if (pacman.live == 0) {
+                canvas.drawBitmap(picture.gameover, MAP_X, (int) ((HEIGHT - MAP_H) / 2), null);
+                if (playsoundend) {
                     playsoundend = false;
                     sound.play(sound.lose);
                 }
-            }
-            else {
-                g.drawBitmap(picture.win,0,200,null);
-                if (playsoundend)
-                {
+            } else {
+                canvas.drawBitmap(picture.win, MAP_X, (int) ((HEIGHT - MAP_H) / 2), null);
+                if (playsoundend) {
                     playsoundend = false;
                     sound.play(sound.intermission);
                 }
             }
-            p.setColor(Color.YELLOW);
-            g.drawText("Touch to restart game",20,1400,p);
+            paint.setColor(Color.YELLOW);
+            paint.setTextSize(60);
+            canvas.drawText("Touch to restart game",
+                    (int) ((WIDTH - MAP_W) + 50),
+                    (int) ((HEIGHT + MAP_H) / 3), paint);
         }
     }
 
-	@Override
-	public boolean onTouchEvent(MotionEvent e){
-        if(e.getAction() == MotionEvent.ACTION_DOWN){
-            if (endgame){
+    @Override
+    public boolean onTouchEvent(MotionEvent e) {
+        if (e.getAction() == MotionEvent.ACTION_DOWN) {
+            if (endgame) {
                 init(this.getHolder());
             }
-	        int x = (int)e.getX();
-	        int y = (int)e.getY();
-	        if(up.contains(x,y)){
-	            pm.setModemove(Pacman.movemode.UP);
-	            return true;
-            }
-            if(down.contains(x,y)){
-                pm.setModemove(Pacman.movemode.DOWN);
+            int x = (int) e.getX();
+            int y = (int) e.getY();
+            if (up.contains(x, y)) {
+                pacman.setModeMove(Pacman.ModeMove.UP);
                 return true;
             }
-            if(left.contains(x,y)){
-                pm.setModemove(Pacman.movemode.LEFT);
+            if (down.contains(x, y)) {
+                pacman.setModeMove(Pacman.ModeMove.DOWN);
                 return true;
             }
-            if(right.contains(x,y)){
-                pm.setModemove(Pacman.movemode.RIGHT);
+            if (left.contains(x, y)) {
+                pacman.setModeMove(Pacman.ModeMove.LEFT);
+                return true;
+            }
+            if (right.contains(x, y)) {
+                pacman.setModeMove(Pacman.ModeMove.RIGHT);
                 return true;
             }
         }
-	    return false;
+        return false;
     }
-    public boolean checkPower(){
-        for(Ghost gh : ghost){
-            if(gh.modemove == Ghost.Modemove.scare)
+
+    public boolean checkPower() {
+        for (Ghost gh : ghosts) {
+            if (gh.modemove == Ghost.ModeMove.SCARE)
                 return true;
         }
         return false;
     }
-    public boolean checkChase(){
-        for(Ghost gh : ghost){
-            if(gh.modemove == Ghost.Modemove.chase)
+
+    public Ghost.ModeMove getGhostModeMove() {
+        boolean scare = false;
+        boolean scatter = false;
+        for (Ghost gh : ghosts) {
+            if (gh.modemove == Ghost.ModeMove.CHASE)
+                return Ghost.ModeMove.CHASE;
+            if (gh.modemove == Ghost.ModeMove.SCARE)
+                scare = true;
+            if (gh.modemove == Ghost.ModeMove.SCATTER)
+                scatter = true;
+        }
+        if (scare) return Ghost.ModeMove.SCARE;
+        if (scatter) return Ghost.ModeMove.SCATTER;
+        return Ghost.ModeMove.NORMAL;
+    }
+
+    public boolean checkChase() {
+        for (Ghost gh : ghosts) {
+            if (gh.modemove == Ghost.ModeMove.CHASE)
                 return true;
         }
         return false;
@@ -264,46 +324,40 @@ public class Control extends SurfaceView implements SurfaceHolder.Callback {
     public void surfaceCreated(SurfaceHolder holder) {
         init(holder);
 
-        main = new GameThread(this,holder);
-        main.setRunning(true);
-        main.start();
+        thread = new GameThread(this, holder);
+        thread.setRunning(true);
+        thread.start();
     }
-    public void init(SurfaceHolder holder){
-        endgame = false;danger = false;playsoundend = true;
-        timeplay = 0;
 
-        pm=new Pacman(picture.pacman);
-        ghost = new ArrayList<Ghost>();
+    public void init(SurfaceHolder holder) {
+        picture = new Picture(this.getResources());
+        level = new Level();
 
-        if (streamid != 0)
-        sound.stop(streamid);
+        endgame = false;
+        danger = false;
+        playsoundend = true;
+        timePlay = 0;
 
-        streamid = sound.playSoundBackground(sound.siren);
+        pacman = new Pacman(picture.pacman);
+        ghosts = new ArrayList<>();
 
-        int[] a = {1,1,1,29,26,1,26,29};
+        sound.play(sound.intermission);
 
-        for(int i=0;i<4;i++) {
-            Ghost gh0 = new Ghost(pm, Ghost.Modemove.normal, (12+i) * PIXEL, 14 * PIXEL,a[i*2],a[i*2+1],
-                    picture.ghost,picture.scare,picture.endscare,picture.eye);
-            ghost.add(gh0);
+        soundId = sound.playSoundBackground(sound.siren);
+
+        int[] a = {1, 1, 1, 29, 26, 1, 26, 29};
+
+        for (int i = 0; i < 4; i++) {
+            Ghost gh0 = new Ghost(this, (12 + i), 14, a[i * 2], a[i * 2 + 1]);
+            ghosts.add(gh0);
         }
-        setmodemove(Ghost.Modemove.scatter);
 
-        powerfood = new ArrayList<Point>();
-        powerfood.add(new Point(1*PIXEL,3*PIXEL));
-        powerfood.add(new Point(1*PIXEL,28*PIXEL));
-        powerfood.add(new Point(26*PIXEL,3*PIXEL));
-        powerfood.add(new Point(26*PIXEL,28*PIXEL));
-        food = new Food(picture.food,13*PIXEL,17*PIXEL);
-
-
-        up = new Rect(100,750,200,850);
-        down = new Rect(100,950,200,1050);
-        left = new Rect(0,850,100,950);
-        right = new Rect(200,850,300,950);
-
-
-        lv=new Level();
+        powerFoods = new ArrayList<>();
+        powerFoods.add(new PowerFood(this, 1, 3));
+        powerFoods.add(new PowerFood(this, 1, 28));
+        powerFoods.add(new PowerFood(this, 26, 3));
+        powerFoods.add(new PowerFood(this, 26, 28));
+        food = new Food(this, 13 * PIXEL, 17 * PIXEL);
     }
 
     @Override
@@ -313,17 +367,42 @@ public class Control extends SurfaceView implements SurfaceHolder.Callback {
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
-        boolean retry= true;
-        while(retry) {
+        boolean retry = true;
+        while (retry) {
             try {
-                this.main.setRunning(false);
+                this.thread.setRunning(false);
 
                 // Parent thread must wait until the end of GameThread.
-                this.main.join();
-            }catch(InterruptedException e)  {
+                this.thread.join();
+            } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            retry= true;
+            retry = true;
         }
     }
+
+    public Pacman getPacman() {
+        return pacman;
+    }
+
+    public Sound getSound() {
+        return sound;
+    }
+
+    public GameThread getThread() {
+        return thread;
+    }
+
+    public ArrayList<Ghost> getGhosts() {
+        return ghosts;
+    }
+
+    public ArrayList<PowerFood> getPowerFoods() {
+        return powerFoods;
+    }
+
+    public Level getLevel() {
+        return level;
+    }
+
 }

@@ -5,171 +5,201 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 
-public class Pacman {
-	public static final int PIXEL = Control.PIXEL;
-	public static final int SPEED = Control.SPEED;
+public class Pacman extends GameObject {
+    public static final int PIXEL = Control.PIXEL;
+    public static final int SPEED = Control.SPEED;
 
-	Bitmap image[];
+    Bitmap[] image;
 
-	public int Pacmanx=13*PIXEL;
-	public int Pacmany=23*PIXEL;
-	public int color = Color.YELLOW;
-	public int score =0;
-	public int countdot;
-	public int count=0;
-	public int c=0,d=0;
-	private Level lv;
-	public int level;
-	public int live;
-	public boolean levelup=false;
+    public int score = 0;
+    public int countDot;
+    public int count = 0;
+    public int animateIndex = 0, directionImage = 0;
+    private Level lv;
+    public int level;
+    public int live;
 
-	protected enum movemode {UP,DOWN,LEFT,RIGHT,NON};
-	public Bitmap pacmanright,
-			pacmandown,
-			pacmanleft,
-			pacmanup,
-			oval;
+    protected enum ModeMove {UP, DOWN, LEFT, RIGHT, NON}
 
-	public movemode mode;
-	public movemode moving;
+    public ModeMove mode;
+    public ModeMove moving;
 
-	Pacman(Bitmap[] bitmaps){
-		this.image = bitmaps;
+    Pacman(Bitmap[] bitmaps) {
+        this.image = bitmaps;
 
-		mode = movemode.RIGHT;
-		moving= movemode.RIGHT;
+        mode = ModeMove.NON;
+        moving = ModeMove.NON;
 
-		lv= new Level();
-		this.countdot= getcountdot();
-		level=1;
-		live=3;
-	}
+        lv = new Level();
+        this.countDot = getcountdot();
+        this.level = 1;
+        this.live = 3;
 
-	public void move() {
-		c++;
-		if(c == 5)
-			c =0;
-		if (!lv.checkborder(Pacmanx/PIXEL,Pacmany/PIXEL))
-		{
-			checkline();
-		}
-		else {
-			checkBorder();
-		}
-		switch(moving) {
-		case LEFT: this.Pacmanx-=SPEED;d = 2;break;
-		case RIGHT:this.Pacmanx+=SPEED;d = 0;break;
-		case UP:   this.Pacmany-=SPEED;d = 3;break;
-		case DOWN: this.Pacmany+=SPEED;d = 1;break;
-		case NON: if (c != 0) c--;break;
-		}
-	}
+        this.deltaPosition = Control.PIXEL / 2 - Control.SIZE_PACMAN / 2;
+        this.x = Control.MAP_X + Control.DEFAULT_COLUMN * Control.PIXEL;
+        this.y = Control.MAP_Y + Control.DEFAULT_ROW * Control.PIXEL;
 
-	public void checkline() {
+    }
 
-		boolean check=(Pacmanx%PIXEL==0)&&(Pacmany%PIXEL==0);
+    public void move() {
+        int xInMap = x - Control.MAP_X;
+        int yInMap = y - Control.MAP_Y;
 
-		int mapx=Pacmanx/PIXEL+1;
-		int mapy=Pacmany/PIXEL;
-		if (Pacmanx%PIXEL == 0)
-			mapx --;
+        animateIndex++;
+        if (animateIndex == 5)
+            animateIndex = 0;
 
+        if (lv.checkBorder(xInMap / PIXEL, yInMap / PIXEL)) {
+            checkBorder();
+        } else {
+            checkWay(xInMap, yInMap);
+        }
+        switch (moving) {
+            case LEFT:
+                this.x -= SPEED;
+                directionImage = 2;
+                break;
+            case RIGHT:
+                this.x += SPEED;
+                directionImage = 0;
+                break;
+            case UP:
+                this.y -= SPEED;
+                directionImage = 3;
+                break;
+            case DOWN:
+                this.y += SPEED;
+                directionImage = 1;
+                break;
+            case NON:
+                if (animateIndex != 0) animateIndex--;
+                break;
+        }
+    }
 
-		if(mode!= moving) switch(mode) {
-		case LEFT: if(lv.canRun(mapy,mapx-1,1)&&check) moving=mode;break;
-		case RIGHT:if(lv.canRun(mapy,mapx+1,1)&&check) moving=mode;break;
-		case UP: if(lv.canRun(mapy-1,mapx,1)&&check) moving = mode;break;
-		case DOWN: if(lv.canRun(mapy+1,mapx,1)&&check) moving =mode;break;
-		case NON: break;
-		}
+    public void checkWay(int xInMap, int yInMap) {
 
-		switch(moving) {
-		case LEFT:if(lv.checkMap(mapy,mapx-1,1)&&check) moving=movemode.NON;break;
-		case RIGHT:if(lv.checkMap(mapy,mapx+1,1)&&check) moving=movemode.NON;break;
-		case UP: if(lv.checkMap(mapy-1,mapx,1)&&check) moving=movemode.NON;break;
-		case DOWN: if(lv.checkMap(mapy+1,mapx,1)&&check) moving=movemode.NON;break;
-		case NON: break;
-		}
+        boolean check = (xInMap % PIXEL == 0) && (yInMap % PIXEL == 0);
 
-		if(moving==movemode.LEFT&&mode==movemode.RIGHT) moving=movemode.RIGHT;
-		else if(moving==movemode.RIGHT&&mode==movemode.LEFT) moving=movemode.LEFT;
-		else if(moving==movemode.DOWN&&mode==movemode.UP) moving=movemode.UP;
-		else if(moving==movemode.UP&&mode==movemode.DOWN) moving=movemode.DOWN;
-	}
+        int column = xInMap / PIXEL + 1;
+        int row = yInMap / PIXEL;
+        if (xInMap % PIXEL == 0)
+            column--;
 
-	public void checkBorder() {
-		if(this.Pacmany==14*PIXEL)
-		if(this.Pacmanx<=-PIXEL) this.Pacmanx=28*PIXEL;
-		else if(this.Pacmanx>=28*PIXEL+SPEED) this.Pacmanx=-PIXEL+SPEED;
+        if (mode != moving) switch (mode) {
+            case LEFT:
+                if (lv.canRun(column - 1, row, 1) && check) moving = mode;
+                break;
+            case RIGHT:
+                if (lv.canRun(column + 1, row, 1) && check) moving = mode;
+                break;
+            case UP:
+                if (lv.canRun(column, row - 1, 1) && check) moving = mode;
+                break;
+            case DOWN:
+                if (lv.canRun(column, row + 1, 1) && check) moving = mode;
+                break;
+            case NON:
+                break;
+        }
 
-	}
+        switch (moving) {
+            case LEFT:
+                if (lv.checkMap(row, column - 1, 1) && check) moving = ModeMove.NON;
+                break;
+            case RIGHT:
+                if (lv.checkMap(row, column + 1, 1) && check) moving = ModeMove.NON;
+                break;
+            case UP:
+                if (lv.checkMap(row - 1, column, 1) && check) moving = ModeMove.NON;
+                break;
+            case DOWN:
+                if (lv.checkMap(row + 1, column, 1) && check) moving = ModeMove.NON;
+                break;
+            case NON:
+                break;
+        }
 
-	public void draw(Canvas canvas){
-		canvas.drawBitmap(image[c+d*5],Pacmanx,Pacmany,null);
-		Paint paint = new Paint();
-		paint.setTextSize(30);
-		paint.setColor(Color.WHITE);
-		canvas.drawText("Score : "+score,20,1350,paint);
-	}
-	public boolean checkdead(int x,int y) {
+        if (moving == ModeMove.LEFT && mode == ModeMove.RIGHT) moving = ModeMove.RIGHT;
+        else if (moving == ModeMove.RIGHT && mode == ModeMove.LEFT) moving = ModeMove.LEFT;
+        else if (moving == ModeMove.DOWN && mode == ModeMove.UP) moving = ModeMove.UP;
+        else if (moving == ModeMove.UP && mode == ModeMove.DOWN) moving = ModeMove.DOWN;
+    }
 
-		if(x-PIXEL<=this.Pacmanx&&this.Pacmanx<=x+PIXEL&&y-PIXEL<=this.Pacmany&&this.Pacmany<=y+PIXEL) this.live--;
-		if(live==0) return true;
-		return false;
-	}
+    public void draw(Canvas canvas) {
+        canvas.drawBitmap(image[animateIndex + directionImage * 5], x + deltaPosition, y + deltaPosition, null);
+    }
 
-	public int getcountdot() {
-		int count=0;
-		for(int i=0;i<31;i++)
-			for(int j=0;j<28;j++) if(lv.checkMap(i, j, 0)||lv.checkMap(i,j,3)) count++;
-		//System.out.println(countdot);
-		return count;
-	}
+    public boolean checkdead(int x, int y) {
 
-//	public void endgame() {
+        if (x - PIXEL <= this.x && this.x <= x + PIXEL && y - PIXEL <= this.y && this.y <= y + PIXEL)
+            this.live--;
+        if (live == 0) return true;
+        return false;
+    }
+
+    public int getcountdot() {
+        int count = 0;
+        for (int i = 0; i < 31; i++)
+            for (int j = 0; j < 28; j++) if (lv.checkMap(i, j, 0) || lv.checkMap(i, j, 3)) count++;
+        return count;
+    }
+
+    //	public void endgame() {
 //		dead=true;
 //	}
     private int idstream = 0;
-    public void setscore(Level lv,Sound sound) {
-		boolean check=(Pacmanx%PIXEL==0)&&(Pacmany%PIXEL==0);
-		int mapx=Pacmanx/PIXEL;
-		int mapy=Pacmany/PIXEL;
-		if(check)
-			if (lv.checkMap(mapy, mapx, 0)) {
-			    if (idstream != 0)
-			    sound.stop(idstream);
-				idstream = sound.play(sound.eat);
 
-				score += 10;
-				this.countdot--;
-				lv.setMap(mapy, mapx, 2);
-			} else if (lv.checkMap(mapy, mapx, 3)) {
-				sound.play(sound.eat);
-				score += 10;
-				this.countdot--;
+    public void setScore(Level lv, Sound sound) {
+        int xInMap = x - Control.MAP_X;
+        int yInMap = y - Control.MAP_Y;
 
-				lv.setMap(mapy, mapx, 4);
-			}
-	}
-	public void setposition(int x,int y) {
-		this.Pacmanx=x;
-		this.Pacmany=y;
-	}
-	public boolean getlevelup() {
-		if(countdot==0) {this.countdot=this.count;return true;}
-		return false;
-	}
-	public void setModemove(movemode m) {
-		mode = m;
-	}
-//	public Bitmap getPacman(boolean i,movemode j) {
+        boolean check = (xInMap % PIXEL == 0) && (yInMap % PIXEL == 0);
+        int column = xInMap / PIXEL;
+        int row = yInMap / PIXEL;
+        if (check)
+            if (lv.checkMap(row, column, 0)) {
+                if (idstream != 0)
+                    sound.stop(idstream);
+                idstream = sound.play(sound.eat);
+
+                score += 10;
+                this.countDot--;
+                lv.setMap(row, column, 2);
+            } else if (lv.checkMap(row, column, 3)) {
+                sound.play(sound.eat);
+                score += 10;
+                this.countDot--;
+
+                lv.setMap(row, column, 4);
+            }
+    }
+
+    public void setposition(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    public boolean getlevelup() {
+        if (countDot == 0) {
+            this.countDot = this.count;
+            return true;
+        }
+        return false;
+    }
+
+    public void setModeMove(ModeMove m) {
+        this.mode = m;
+    }
+
+    //	public Bitmap getPacman(boolean i,movemode j) {
 //		if(i)
 //			return getImage(j);
 //		return oval;
 //	}
-	public boolean isStop() {
-		if(moving == movemode.NON)
-			return true;
-		return false;
-	}
+    public boolean isStop() {
+        if (moving == ModeMove.NON)
+            return true;
+        return false;
+    }
 }
